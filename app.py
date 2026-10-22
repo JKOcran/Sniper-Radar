@@ -7,12 +7,8 @@ st.set_page_config(page_title="Sniper Radar", page_icon="🎯")
 st.title("🎯 Sniper Radar (Manual MT5)")
 st.write("Strict Harami & Tsutsumi Scanner for Gold, BTC, and Forex.")
 
-# This pulls the key from your Streamlit Secrets box
-try:
-    API_KEY = st.secrets["TWELVEDATA_API_KEY"]
-except:
-    st.error("⚠️ API Key not found in Streamlit Secrets! Please check your settings.")
-    st.stop()
+# ⚠️ PASTE YOUR ACTUAL API KEY BETWEEN THE QUOTES BELOW ⚠️
+API_KEY = "PK7LMWASVEN5MB6TC67AY4HMII" 
 
 SYMBOLS = ["XAU/USD", "BTC/USD", "EUR/USD", "GBP/USD"]
 
@@ -53,10 +49,12 @@ def analyze_market(df, symbol):
     prev_body = abs(prev_close - prev_open)
     curr_body = abs(curr_close - curr_open)
     
+    # Bullish Harami Pattern
     is_harami = (prev_close < prev_open) and (curr_close > curr_open) and \
                 (curr_open > prev_close) and (curr_close < prev_open) and \
                 (curr_body < prev_body * 0.5)
                 
+    # Bullish Tsutsumi (Engulfing) Pattern
     is_tsutsumi = (prev_close < prev_open) and (curr_close > curr_open) and \
                   (curr_open <= prev_close) and (curr_close >= prev_open)
                   
@@ -73,19 +71,22 @@ def analyze_market(df, symbol):
 
 # --- UI LOGIC ---
 if st.button("SCAN MARKET NOW", use_container_width=True):
-    with st.spinner("Fetching data and scanning patterns..."):
-        for symbol in SYMBOLS:
-            data_result = get_data(symbol)
-            
-            # If it's a string, it means an error message was returned
-            if isinstance(data_result, str):
-                st.error(f"**{symbol}**: Failed - {data_result}")
-            else:
-                signal, reason, price, rsi, rvol = analyze_market(data_result, symbol)
+    if API_KEY == "PASTE_YOUR_KEY_HERE" or API_KEY == "":
+         st.error("⚠️ You forgot to paste your API Key into the code on GitHub! (Line 11)")
+    else:
+        with st.spinner("Fetching data and scanning patterns..."):
+            for symbol in SYMBOLS:
+                data_result = get_data(symbol)
                 
-                if signal == "SAFE BUY":
-                    st.success(f"**{symbol}**: {signal} - {reason} | Price: {price} | RSI: {rsi:.1f} | Vol: {rvol:.1f}x")
-                elif signal == "BAD TRAP":
-                    st.error(f"**{symbol}**: {signal} - {reason} | Price: {price} | RSI: {rsi:.1f}")
+                # If it's a string, it means an error message was returned
+                if isinstance(data_result, str):
+                    st.error(f"**{symbol}**: Failed - {data_result}")
                 else:
-                    st.warning(f"**{symbol}**: {signal} - {reason} | Price: {price} | RSI: {rsi:.1f}")
+                    signal, reason, price, rsi, rvol = analyze_market(data_result, symbol)
+                    
+                    if signal == "SAFE BUY":
+                        st.success(f"**{symbol}**: {signal} - {reason} | Price: {price} | RSI: {rsi:.1f} | Vol: {rvol:.1f}x")
+                    elif signal == "BAD TRAP":
+                        st.error(f"**{symbol}**: {signal} - {reason} | Price: {price} | RSI: {rsi:.1f}")
+                    else:
+                        st.warning(f"**{symbol}**: {signal} - {reason} | Price: {price} | RSI: {rsi:.1f}")
