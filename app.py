@@ -8,7 +8,7 @@ st.title("🎯 Sniper Radar (Manual MT5)")
 st.write("Strict Harami & Tsutsumi Scanner for Gold, BTC, and Forex.")
 
 # Put your TwelveData API key here
-API_KEY = "YOUR_API_KEY_HERE" 
+API_KEY = "PK7LMWASVEN5MB6TC67AY4HMII 
 SYMBOLS = ["XAU/USD", "BTC/USD", "EUR/USD", "GBP/USD"]
 
 def get_data(symbol):
