@@ -7,8 +7,13 @@ st.set_page_config(page_title="Sniper Radar", page_icon="🎯")
 st.title("🎯 Sniper Radar (Manual MT5)")
 st.write("Strict Harami & Tsutsumi Scanner for Gold, BTC, and Forex.")
 
-# Put your TwelveData API key here
-API_KEY = "PK7LMWASVEN5MB6TC67AY4HMII" 
+# This pulls the key from your Streamlit Secrets box
+try:
+    API_KEY = st.secrets["TWELVEDATA_API_KEY"]
+except:
+    st.error("⚠️ API Key not found in Streamlit Secrets! Please check your settings.")
+    st.stop()
+
 SYMBOLS = ["XAU/USD", "BTC/USD", "EUR/USD", "GBP/USD"]
 
 def get_data(symbol):
@@ -16,51 +21,47 @@ def get_data(symbol):
     url = f"https://api.twelvedata.com/time_series?symbol={symbol}&interval=15min&outputsize=50&apikey={API_KEY}"
     response = requests.get(url).json()
     
+    # Check for API errors (like limit reached or invalid key)
+    if "status" in response and response["status"] == "error":
+        return response["message"]
+        
     if "values" not in response:
-        return None
+        return "Unknown API Error"
         
     df = pd.DataFrame(response["values"])
-    # Convert strings to floats and reverse order (oldest to newest)
     for col in ['open', 'high', 'low', 'close', 'volume']:
         df[col] = df[col].astype(float)
     df = df.iloc[::-1].reset_index(drop=True)
     return df
 
 def analyze_market(df, symbol):
-    # 1. Calculate Indicators
     df['EMA9'] = df['close'].ewm(span=9, adjust=False).mean()
     df['EMA21'] = df['close'].ewm(span=21, adjust=False).mean()
     
-    # RSI
     delta = df['close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
     rs = gain / loss
     df['RSI'] = 100 - (100 / (1 + rs))
     
-    # RVOL
     df['Vol_SMA'] = df['volume'].rolling(window=20).mean()
     df['RVOL'] = df['volume'] / df['Vol_SMA']
     
-    # 2. Pattern Recognition (Harami & Tsutsumi)
     prev_open, prev_close = df['open'].iloc[-2], df['close'].iloc[-2]
     curr_open, curr_close = df['open'].iloc[-1], df['close'].iloc[-1]
     
     prev_body = abs(prev_close - prev_open)
     curr_body = abs(curr_close - curr_open)
     
-    # Bullish Harami
     is_harami = (prev_close < prev_open) and (curr_close > curr_open) and \
                 (curr_open > prev_close) and (curr_close < prev_open) and \
                 (curr_body < prev_body * 0.5)
                 
-    # Bullish Tsutsumi (Engulfing)
     is_tsutsumi = (prev_close < prev_open) and (curr_close > curr_open) and \
                   (curr_open <= prev_close) and (curr_close >= prev_open)
                   
     latest = df.iloc[-1]
     
-    # 3. Strict Logic Evaluation
     if is_harami and latest['RSI'] < 40:
         return "SAFE BUY", "Harami Reversal", latest['close'], latest['RSI'], latest['RVOL']
     elif is_tsutsumi and latest['RVOL'] > 1.2 and latest['RSI'] < 65:
@@ -72,15 +73,16 @@ def analyze_market(df, symbol):
 
 # --- UI LOGIC ---
 if st.button("SCAN MARKET NOW", use_container_width=True):
-    if API_KEY == "YOUR_API_KEY_HERE":
-        st.error("Please insert your API Key in the code.")
-    else:
+    with st.spinner("Fetching data and scanning patterns..."):
         for symbol in SYMBOLS:
-            df = get_data(symbol)
-            if df is not None:
-                signal, reason, price, rsi, rvol = analyze_market(df, symbol)
+            data_result = get_data(symbol)
+            
+            # If it's a string, it means an error message was returned
+            if isinstance(data_result, str):
+                st.error(f"**{symbol}**: Failed - {data_result}")
+            else:
+                signal, reason, price, rsi, rvol = analyze_market(data_result, symbol)
                 
-                # Display colored boxes based on signal
                 if signal == "SAFE BUY":
                     st.success(f"**{symbol}**: {signal} - {reason} | Price: {price} | RSI: {rsi:.1f} | Vol: {rvol:.1f}x")
                 elif signal == "BAD TRAP":
