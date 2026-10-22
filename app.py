@@ -77,7 +77,7 @@ if st.button("SCAN MARKET NOW", use_container_width=True):
         with st.spinner("Fetching data and scanning patterns..."):
             for symbol in SYMBOLS:
                 data_result = get_data(symbol)
-                
+                "
                 # If it's a string, it means an error message was returned
                 if isinstance(data_result, str):
                     st.error(f"**{symbol}**: Failed - {data_result}")
