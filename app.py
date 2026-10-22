@@ -8,7 +8,7 @@ st.title("🎯 Sniper Radar (Manual MT5)")
 st.write("Strict Harami & Tsutsumi Scanner for Gold, BTC, and Forex.")
 
 # ⚠️ PASTE YOUR ACTUAL API KEY BETWEEN THE QUOTES BELOW ⚠️
-API_KEY = "PKRKSDNHROVD7IIHZMODHGR4S3"
+API_KEY = st.secrets["TWELVEDATA_API_KEY"]
 
 SYMBOLS = ["XAU/USD", "BTC/USD", "EUR/USD", "GBP/USD"]
 
